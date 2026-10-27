@@ -1,0 +1,164 @@
+<title>גלגל האותיות</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Secular+One&family=Rubik:wght@400;600&display=swap">
+<style>
+/* Layout: one screen, a round plastic dial with letter keys on the rim and the timer button in the middle */
+:root{
+  --table:#1d3b47;      /* felt behind the toy */
+  --dial:#f2b631;       /* yellow plastic disk */
+  --dial-edge:#c98c12;
+  --key:#fffaf0;        /* cream letter keys */
+  --key-ink:#1d3b47;
+  --key-down:#2a5664;   /* pressed-in key */
+  --hub:#e2483b;        /* red timer button */
+  --hub-edge:#9e2a20;
+  --ink:#fffaf0;
+  --muted:#9fc0c9;
+  --f-display:"Secular One","Rubik",system-ui,sans-serif;
+  --f-body:"Rubik",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--table);color:var(--ink);font-family:var(--f-body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
+  -webkit-tap-highlight-color:transparent;user-select:none;overflow:hidden}
+h1{font-family:var(--f-display);font-weight:400;font-size:1.6rem;margin:0;letter-spacing:.02em}
+.status{font-size:1rem;color:var(--muted);min-height:1.4em;text-align:center;margin:0}
+.cat{font-family:var(--f-display);font-size:clamp(1.3rem,6vw,1.9rem);color:var(--dial);margin:0;min-height:1.3em;text-align:center;text-wrap:balance}
+.cat:empty{display:none}
+.btn.suggest{border-color:var(--dial);color:var(--dial)}
+.dial{position:relative;width:min(92vw,56vh,460px);aspect-ratio:1;max-width:100%;border-radius:50%;
+  background:radial-gradient(circle at 50% 40%,#f8cb5a,var(--dial) 60%);
+  box-shadow:0 0 0 6px var(--dial-edge),0 18px 40px rgba(0,0,0,.45)}
+.key{position:absolute;width:12.5%;aspect-ratio:1;transform:translate(-50%,-50%);
+  border:none;border-radius:50%;background:var(--key);color:var(--key-ink);
+  font-family:var(--f-display);font-size:clamp(1.1rem,5vw,1.9rem);line-height:1;cursor:pointer;
+  box-shadow:0 4px 0 #b9ad95,0 6px 10px rgba(0,0,0,.25);transition:transform .08s,box-shadow .08s,background .15s,color .15s}
+.key:active{transform:translate(-50%,-46%)}
+.key.used{background:var(--key-down);color:#5f8793;box-shadow:inset 0 3px 6px rgba(0,0,0,.5);cursor:default;transform:translate(-50%,-48%)}
+.key:focus-visible,.hub:focus-visible,.btn:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+.hub{position:absolute;inset:27%;border-radius:50%;border:none;cursor:pointer;
+  background:radial-gradient(circle at 50% 35%,#f06a5e,var(--hub) 65%);
+  box-shadow:0 6px 0 var(--hub-edge),0 10px 18px rgba(0,0,0,.35);color:var(--ink);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;transition:transform .08s}
+.hub:active{transform:translateY(3px)}
+.ring{position:absolute;inset:-7%;width:114%;height:114%;transform:rotate(-90deg);pointer-events:none}
+.ring circle{fill:none;stroke-width:5}
+.ring .track{stroke:rgba(0,0,0,.15)}
+.ring .prog{stroke:var(--table);stroke-linecap:round;transition:stroke-dashoffset .1s linear}
+.time{font-family:var(--f-display);font-size:clamp(2.6rem,13vw,4.4rem);line-height:1;font-variant-numeric:tabular-nums}
+.hint{font-size:clamp(.7rem,2.8vw,.9rem);opacity:.9;margin-top:4px}
+.hub.urgent .time{animation:pulse .5s infinite alternate}
+@keyframes pulse{to{transform:scale(1.12)}}
+.controls{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.btn{font-family:var(--f-body);font-weight:600;font-size:1rem;padding:10px 20px;border-radius:999px;border:2px solid var(--muted);
+  background:transparent;color:var(--ink);cursor:pointer}
+.over{position:fixed;inset:0;background:rgba(15,32,39,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+  padding:24px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px));text-align:center;z-index:5}
+.over h2{font-family:var(--f-display);font-weight:400;font-size:clamp(2.2rem,10vw,3.4rem);margin:0;color:var(--dial)}
+.over p{margin:0;font-size:1.1rem;color:var(--muted);max-width:30ch}
+.btn.solid{background:var(--hub);border-color:var(--hub);font-size:1.1rem;padding:12px 28px}
+@media (prefers-reduced-motion:reduce){.hub.urgent .time{animation:none}.key,.hub{transition:none}}
+</style>
+
+<h1>גלגל האותיות</h1>
+<p class="cat" id="cat" aria-live="polite"></p>
+<p class="status" id="status">בחרו נושא ביחד, ולחצו על הכפתור האדום להתחלה</p>
+
+<div class="dial" id="dial">
+  <button class="hub" id="hub" aria-label="התחלת הטיימר">
+    <svg class="ring" viewBox="0 0 100 100" aria-hidden="true">
+      <circle class="track" cx="50" cy="50" r="46"></circle>
+      <circle class="prog" id="prog" cx="50" cy="50" r="46"></circle>
+    </svg>
+    <span class="time" id="time">15</span>
+    <span class="hint" id="hint">התחל</span>
+  </button>
+</div>
+
+<div class="controls">
+  <button class="btn suggest" id="suggest">הצעת קטגוריה</button>
+  <button class="btn" id="reset">סבב חדש</button>
+</div>
+
+<div class="over" id="over" hidden>
+  <h2 id="overTitle">נגמר הזמן!</h2>
+  <p id="overText">השחקן הזה בחוץ. האותיות שנלחצו נשארות.</p>
+  <div class="controls">
+    <button class="btn solid" id="cont">שחקן הבא</button>
+    <button class="btn" id="reset2">סבב חדש</button>
+  </div>
+</div>
+
+<script>
+const LETTERS="אבגדהוזחטיכלמנסעפצקרשת".split("");
+const LIMIT=15;
+const dial=document.getElementById("dial"),hub=document.getElementById("hub"),
+  timeEl=document.getElementById("time"),hint=document.getElementById("hint"),
+  prog=document.getElementById("prog"),statusEl=document.getElementById("status"),
+  over=document.getElementById("over"),overTitle=document.getElementById("overTitle"),overText=document.getElementById("overText");
+const C=2*Math.PI*46;prog.style.strokeDasharray=C;
+
+let used=new Set(),running=false,endAt=0,raf=0,lastTick=-1,ctx=null,wake=null;
+const keys=[];
+
+LETTERS.forEach((l,i)=>{
+  const a=-(i/LETTERS.length)*2*Math.PI; // counter-clockwise from the top, right to left
+  const b=document.createElement("button");
+  b.className="key";b.textContent=l;b.id="k"+i;
+  b.style.left=(50+42*Math.sin(a))+"%";b.style.top=(50-42*Math.cos(a))+"%";
+  b.addEventListener("click",()=>press(l,b));
+  dial.appendChild(b);keys.push(b);
+});
+
+function audio(){try{ctx=ctx||new (window.AudioContext||window.webkitAudioContext)();if(ctx.state==="suspended")ctx.resume();}catch(e){}}
+function beep(f,d,type="sine",vol=.15){if(!ctx)return;const o=ctx.createOscillator(),g=ctx.createGain();
+  o.type=type;o.frequency.value=f;g.gain.value=vol;g.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+d);
+  o.connect(g).connect(ctx.destination);o.start();o.stop(ctx.currentTime+d);}
+async function keepAwake(){try{if(!wake&&navigator.wakeLock)wake=await navigator.wakeLock.request("screen");}catch(e){}}
+
+function start(){audio();keepAwake();running=true;endAt=performance.now()+LIMIT*1000;lastTick=-1;
+  hint.textContent="לחצו אות";statusEl.textContent="אמרו מילה ולחצו על האות שלה";cancelAnimationFrame(raf);loop();}
+function loop(){
+  const left=Math.max(0,(endAt-performance.now())/1000),sec=Math.ceil(left);
+  timeEl.textContent=sec;prog.style.strokeDashoffset=C*(1-left/LIMIT);
+  hub.classList.toggle("urgent",sec<=5&&left>0);
+  if(sec!==lastTick&&sec<=5&&sec>0){beep(880,.08,"square",.08);}
+  lastTick=sec;
+  if(left<=0){timeUp();return;}
+  raf=requestAnimationFrame(loop);
+}
+function press(l,b){
+  if(used.has(l))return;
+  audio();
+  if(!running){statusEl.textContent="לחצו קודם על הכפתור האדום";hub.animate([{transform:"scale(1)"},{transform:"scale(1.06)"},{transform:"scale(1)"}],{duration:300});return;}
+  used.add(l);b.classList.add("used");b.setAttribute("aria-pressed","true");
+  beep(520,.12,"triangle",.2);
+  if(used.size===LETTERS.length){running=false;cancelAnimationFrame(raf);hub.classList.remove("urgent");
+    show("כל האותיות נגמרו!","כל הכבוד לכל מי שעוד במשחק. בחרו נושא חדש.",false);beep(660,.15);setTimeout(()=>beep(990,.3),150);return;}
+  endAt=performance.now()+LIMIT*1000;lastTick=-1;
+  statusEl.textContent="תור השחקן הבא";
+}
+function timeUp(){running=false;hub.classList.remove("urgent");timeEl.textContent="0";hint.textContent="המשך";
+  beep(140,.7,"sawtooth",.2);show("נגמר הזמן!","השחקן הזה בחוץ. האותיות שנלחצו נשארות.",true);}
+function show(t,p,canContinue){overTitle.textContent=t;overText.textContent=p;document.getElementById("cont").hidden=!canContinue;over.hidden=false;}
+function reset(){running=false;cancelAnimationFrame(raf);used.clear();
+  keys.forEach(k=>{k.classList.remove("used");k.removeAttribute("aria-pressed")});
+  timeEl.textContent=LIMIT;prog.style.strokeDashoffset=0;hint.textContent="התחל";hub.classList.remove("urgent");
+  statusEl.textContent="בחרו נושא ביחד, ולחצו על הכפתור האדום להתחלה";over.hidden=true;}
+
+hub.addEventListener("click",()=>{if(!running)start();});
+document.getElementById("cont").addEventListener("click",()=>{over.hidden=true;start();});
+document.getElementById("reset").addEventListener("click",reset);
+const CATS=["אופנה","דברים מסריחים","חיות","אוכל","מקצועות","ארצות","ערים בישראל","דברים במטבח","דברים שעושים בים","ספורט","שמות של בנים","שמות של בנות","דברים בבית ספר","כלי תחבורה","ממתקים","פירות וירקות","דברים רכים","דברים מפחידים","דברים בחדר האמבטיה","כלי נגינה","סרטים","זמרים ישראלים","דברים שלוקחים לטיול","תחביבים","חלקי גוף","דברים שקשורים לחורף","דברים שעפים","דברים שאפשר לשבור","דברים עגולים","דברים אדומים","דברים שמוצאים בתיק","מותגים","משחקים","דברים בגינה","מאכלים ישראליים","פעלים","תכונות של בן אדם","דברים בסופר","חגים ומסורות","דברים מתוקים","דברים מרגיזים","דברים שיש בחתונה","דברים ביער","ציוד משרדי","דברים בחלל","דברים דביקים","דברים שעושים רעש","מילים באנגלית","דברים במכונית","שמות לכלבים"];
+let catPool=[];
+function suggest(){if(!catPool.length)catPool=CATS.slice().sort(()=>Math.random()-.5);
+  const c=catPool.pop(),el=document.getElementById("cat");el.textContent=c;
+  el.animate([{opacity:0,transform:"translateY(-6px)"},{opacity:1,transform:"none"}],{duration:250});}
+document.getElementById("suggest").addEventListener("click",suggest);
+document.getElementById("reset2").addEventListener("click",reset);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&running){wake=null;keepAwake();}});
+prog.style.strokeDashoffset=0;
+</script>
